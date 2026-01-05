@@ -3,6 +3,13 @@ name: Build and Deploy WASM Preview
 on:
   push:
     branches: [main]
+    paths:
+      # Only trigger on code changes, not documentation/metadata
+      - 'src/**'
+      - 'ui/**'
+      - 'Cargo.toml'
+      - 'build.rs'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
