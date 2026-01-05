@@ -47,7 +47,6 @@ export component ProgressRing inherits Rectangle {
         viewbox-height: 100;
         stroke: fill-color;
         stroke-width: stroke-width / 1px;
-        stroke-linecap: round;
         fill: transparent;
         
         property <float> end-x: 50 + 45 * Math.sin(angle * 0.0174533);
@@ -125,7 +124,6 @@ export component ProgressRingMini inherits Rectangle {
         viewbox-height: 48;
         stroke: fill-color;
         stroke-width: 4;
-        stroke-linecap: round;
         fill: transparent;
         
         property <float> end-x: 24 + 20 * Math.sin(angle * 0.0174533);
