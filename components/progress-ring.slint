@@ -14,7 +14,7 @@ export component ProgressRing inherits Rectangle {
     height: 120px;
     
     property <float> progress: Math.clamp(value / max, 0, 1);
-    property <float> angle: (progress * 360deg) / 1deg;
+    property <angle> angle: progress * 360deg;
     
     // Background track
     Path {
@@ -49,9 +49,8 @@ export component ProgressRing inherits Rectangle {
         stroke-width: stroke-width;
         fill: transparent;
         
-        property <float> angle-rad: angle * 0.0174533;
-        property <float> end-x: 50 + 45 * Math.sin(angle-rad);
-        property <float> end-y: 50 - 45 * Math.cos(angle-rad);
+        property <float> end-x: 50 + 45 * sin(angle);
+        property <float> end-y: 50 - 45 * cos(angle);
         property <bool> large-arc: progress > 0.5;
         
         MoveTo { x: 50; y: 5; }
@@ -102,7 +101,7 @@ export component ProgressRingMini inherits Rectangle {
     height: 48px;
     
     property <float> progress: Math.clamp(value / max, 0, 1);
-    property <float> angle: (progress * 360deg) / 1deg;
+    property <angle> angle: progress * 360deg;
     
     Path {
         width: 100%;
@@ -127,9 +126,8 @@ export component ProgressRingMini inherits Rectangle {
         stroke-width: 4px;
         fill: transparent;
         
-        property <float> angle-rad: angle * 0.0174533;
-        property <float> end-x: 24 + 20 * Math.sin(angle-rad);
-        property <float> end-y: 24 - 20 * Math.cos(angle-rad);
+        property <float> end-x: 24 + 20 * sin(angle);
+        property <float> end-y: 24 - 20 * cos(angle);
         
         MoveTo { x: 24; y: 4; }
         ArcTo {
