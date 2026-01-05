@@ -8,13 +8,13 @@ export component ProgressRing inherits Rectangle {
     in property <bool> show-value: true;
     in property <color> track-color: #424242;
     in property <color> fill-color: #3AA1F5;
-    in property <float> stroke-width: 8px;
+    in property <length> stroke-width: 8px;
     
     width: 120px;
     height: 120px;
     
     property <float> progress: Math.clamp(value / max, 0, 1);
-    property <float> angle: progress * 360deg;
+    property <float> angle: (progress * 360deg) / 1deg;
     
     // Background track
     Path {
@@ -23,7 +23,7 @@ export component ProgressRing inherits Rectangle {
         viewbox-width: 100;
         viewbox-height: 100;
         stroke: track-color;
-        stroke-width: stroke-width / 1px;
+        stroke-width: stroke-width;
         fill: transparent;
         
         MoveTo { x: 50; y: 5; }
@@ -46,11 +46,12 @@ export component ProgressRing inherits Rectangle {
         viewbox-width: 100;
         viewbox-height: 100;
         stroke: fill-color;
-        stroke-width: stroke-width / 1px;
+        stroke-width: stroke-width;
         fill: transparent;
         
-        property <float> end-x: 50 + 45 * Math.sin(angle * 0.0174533);
-        property <float> end-y: 50 - 45 * Math.cos(angle * 0.0174533);
+        property <float> angle-rad: angle * 0.0174533;
+        property <float> end-x: 50 + 45 * Math.sin(angle-rad);
+        property <float> end-y: 50 - 45 * Math.cos(angle-rad);
         property <bool> large-arc: progress > 0.5;
         
         MoveTo { x: 50; y: 5; }
@@ -101,7 +102,7 @@ export component ProgressRingMini inherits Rectangle {
     height: 48px;
     
     property <float> progress: Math.clamp(value / max, 0, 1);
-    property <float> angle: progress * 360deg;
+    property <float> angle: (progress * 360deg) / 1deg;
     
     Path {
         width: 100%;
@@ -109,7 +110,7 @@ export component ProgressRingMini inherits Rectangle {
         viewbox-width: 48;
         viewbox-height: 48;
         stroke: #424242;
-        stroke-width: 4;
+        stroke-width: 4px;
         fill: transparent;
         
         MoveTo { x: 24; y: 4; }
@@ -123,11 +124,12 @@ export component ProgressRingMini inherits Rectangle {
         viewbox-width: 48;
         viewbox-height: 48;
         stroke: fill-color;
-        stroke-width: 4;
+        stroke-width: 4px;
         fill: transparent;
         
-        property <float> end-x: 24 + 20 * Math.sin(angle * 0.0174533);
-        property <float> end-y: 24 - 20 * Math.cos(angle * 0.0174533);
+        property <float> angle-rad: angle * 0.0174533;
+        property <float> end-x: 24 + 20 * Math.sin(angle-rad);
+        property <float> end-y: 24 - 20 * Math.cos(angle-rad);
         
         MoveTo { x: 24; y: 4; }
         ArcTo {
