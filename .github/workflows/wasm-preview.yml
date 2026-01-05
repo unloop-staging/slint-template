@@ -91,12 +91,14 @@ jobs:
             <canvas id="canvas"></canvas>
             <script type="module">
               // Import the generated JavaScript bindings
-              import init from './slint_app.js';
+              import * as wasm from './slint_app.js';
 
               async function run() {
                 try {
+                  // Initialize the WASM module
+                  await wasm.default();
                   // Initialize the Slint app
-                  await init();
+                  wasm.init();
                   console.log('Slint app initialized successfully');
                 } catch (error) {
                   console.error('Failed to initialize Slint app:', error);
