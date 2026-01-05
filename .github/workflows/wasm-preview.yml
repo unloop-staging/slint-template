@@ -1,0 +1,169 @@
+name: Build and Deploy WASM Preview
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment per repository
+concurrency:
+  group: "pages-${{ github.repository }}"
+  cancel-in-progress: true
+
+jobs:
+  build-wasm:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-wasm-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build WASM
+        run: |
+          wasm-pack build --target web --out-dir dist/wasm --release
+          echo "WASM build complete"
+          ls -lah dist/wasm/
+      
+      - name: Create index.html for preview
+        run: |
+          cat > dist/wasm/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Slint App Preview</title>
+            <style>
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              body {
+                width: 100vw;
+                height: 100vh;
+                overflow: hidden;
+                background: #000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+              #canvas {
+                max-width: 100%;
+                max-height: 100%;
+              }
+            </style>
+          </head>
+          <body>
+            <canvas id="canvas"></canvas>
+            <script type="module">
+              // Import the generated JavaScript bindings
+              import init from './slint_app.js';
+
+              async function run() {
+                try {
+                  // Initialize the Slint app
+                  await init();
+                  console.log('Slint app initialized successfully');
+                } catch (error) {
+                  console.error('Failed to initialize Slint app:', error);
+                  document.body.innerHTML = '<p style="color: white; font-family: sans-serif;">Failed to load preview</p>';
+                }
+              }
+
+              run();
+            </script>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: ./dist/wasm
+
+  deploy-pages:
+    needs: build-wasm
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
+      - name: Notify Unloop (webhook)
+        if: always()
+        run: |
+          PREVIEW_ID="${GITHUB_REPOSITORY##*/}"
+          PREVIEW_ID="${PREVIEW_ID#preview-}"
+
+          STATUS="success"
+          if [ "${{ job.status }}" != "success" ]; then
+            STATUS="failed"
+          fi
+
+          WASM_URL="${{ steps.deployment.outputs.page_url }}"
+
+          # Send webhook to Unloop backend
+          curl -X POST "${{ secrets.UNLOOP_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: pages_build" \
+            -H "X-Hub-Signature-256: ${{ secrets.GITHUB_WEBHOOK_SECRET }}" \
+            -d '{
+              "previewId": "'"$PREVIEW_ID"'",
+              "status": "'"$STATUS"'",
+              "wasmUrl": "'"$WASM_URL"'",
+              "repository": "${{ github.repository }}",
+              "sha": "${{ github.sha }}",
+              "run_id": "${{ github.run_id }}"
+            }' || echo "Failed to notify Unloop (webhook might not be configured)"
+
+  # Optional: Notify on failure
+  notify-failure:
+    needs: [build-wasm, deploy-pages]
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+      - name: Notify failure
+        run: |
+          PREVIEW_ID="${GITHUB_REPOSITORY##*/}"
+          PREVIEW_ID="${PREVIEW_ID#preview-}"
+
+          curl -X POST "${{ secrets.UNLOOP_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "previewId": "'"$PREVIEW_ID"'",
+              "status": "failed",
+              "repository": "${{ github.repository }}",
+              "error": "WASM build or deployment failed"
+            }' || echo "Failed to notify Unloop"
